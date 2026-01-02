@@ -39,6 +39,7 @@ mkdir -p "Metabarcoding_Azure/Logs_archive"
 mkdir -p "Metabarcoding_Azure/$PROJECT/scripts"
 mkdir -p "Metabarcoding_Azure/$PROJECT/samplesheet"
 mkdir -p "Metabarcoding_Azure/$PROJECT/example_input_files"
+mkdir -p "Metabarcoding_Azure/$PROJECT/output"
 
 # ---------------------------
 #  CREATE EXAMPLE FILES
