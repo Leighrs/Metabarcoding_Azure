@@ -139,4 +139,4 @@ for fwd_blob in "${FWD_BLOBS[@]}"; do
 done
 
 echo "Sample sheet written to: $OUTPUT_FILE"
-echo "Example input folder (for reference): az://${CONTAINER}/${BLOB_PREFIX}/"
+echo "Fastq test data input folder: az://${CONTAINER}/${BLOB_PREFIX}/"
