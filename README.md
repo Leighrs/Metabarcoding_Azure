@@ -104,8 +104,8 @@ Open the parameter file for the nf-core/ampliseq pipeline:
 - Edit this file so that the input paths, primer sequences, and filtering settings match your dataset.
 
 ```
-PROJECT_NAME=$(cat "$HOME/Metabarcoding/current_project_name.txt")
-nano $HOME/Metabarcoding/$PROJECT_NAME/scripts/${PROJECT_NAME}_nf-params.json
+PROJECT_NAME=$(cat "$HOME/Metabarcoding_Azure/current_project_name.txt")
+nano $HOME/Metabarcoding_Azure/$PROJECT_NAME/scripts/${PROJECT_NAME}_nf-params.json
 ```
 **Replace these parameters for the test data using the following information:**
 
