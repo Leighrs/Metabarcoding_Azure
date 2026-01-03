@@ -87,6 +87,33 @@ Ensure you are in your home directory and run the following shell script.
 
 *This script will autopopulate the PATHs for each of your fastq files, extrapolate sample names from those files, and prompt you to specify how many metabarcoding runs these samples were sequenced in.*
 
+IMPORTANT: To run this script, you need to create a shell script file in your $HOME directory listing your Azure storage account information. Because this information is private, I did not add this information to the samplesheet generation shell script.
+
+Create *azure_blob_info.sh" file:
+```
+cd ~
+nano azure_blob_info.sh
+```
+Paste in the following information to the file: *Contact lrsanders@ucdavis.edu for redacted information.
+
+Nano files are little tricky to work with. Here are some tips:
+- Copy the new text below, and paste into the empty script using a right-click to paste. Some terminals may require `Ctrl` + `Shift` + `V`.
+- Navigate with the arrow keys to the redacted info, backspace 'redacted', then paste in correct information.
+- Exit the script using `Ctrl` + `X`. Then `Y` to save. Press **Enter**.
+```
+#!/usr/bin/env bash
+
+# Storage account + container
+export STORAGE_ACCOUNT="redacted"
+export CONTAINER="redacted"
+
+# Prefix ("folder") inside the container
+export BLOB_PREFIX="redacted"
+
+# SAS token (no leading '?')
+export AZURE_STORAGE_SAS_TOKEN='redacted`
+```
+Generate samplesheet:
 ```
 cd ~
 PROJECT_NAME=$(cat "$HOME/Metabarcoding_Azure/current_project_name.txt")
@@ -108,7 +135,6 @@ PROJECT_NAME=$(cat "$HOME/Metabarcoding_Azure/current_project_name.txt")
 nano $HOME/Metabarcoding_Azure/$PROJECT_NAME/scripts/${PROJECT_NAME}_nf-params.json
 ```
 **Replace these parameters for the test data using the following information:**
-
 Nano files are little tricky to work with. Here are some tips:
 
 - First, highlight the entire script:
@@ -119,7 +145,6 @@ Nano files are little tricky to work with. Here are some tips:
 - Delete all the text in the scriptusing `Ctrl` + `K`.
 - Copy the new text below, and paste into the empty script using a right-click to paste. Some terminals may require `Ctrl` + `Shift` + `V`.
 - Exit the script using `Ctrl` + `X`. Then `Y` to save. Press **Enter**.
-
 ```
 {
     "input": "$HOME/Metabarcoding_Azure/$PROJECT_NAME/samplesheet/${PROJECT_NAME}_samplesheet.txt",
