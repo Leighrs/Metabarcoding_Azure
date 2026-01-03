@@ -127,7 +127,7 @@ Nano files are little tricky to work with. Here are some tips:
     "RV_primer": "CATAGTGGGGTATCTAATCCCAGTTTG",
 
     "metadata": "az:// path to metadata",
-    "outdir": "az:// path to metadata",
+    "outdir": "$HOME/Metabarcoding_Azure/$PROJECT_NAME/output/",
 
     "seed": 13,
 
