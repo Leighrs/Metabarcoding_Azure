@@ -89,7 +89,7 @@ Ensure you are in your home directory and run the following shell script.
 
 IMPORTANT: To run this script, you need to create a shell script file in your $HOME directory listing your Azure storage account information. Because this information is private, I did not add this information to the samplesheet generation shell script.
 
-Create *azure_blob_info.sh" file:
+Create *azure_blob_info.sh* file:
 ```
 cd ~
 nano azure_blob_info.sh
