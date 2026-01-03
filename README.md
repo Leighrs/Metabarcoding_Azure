@@ -113,6 +113,10 @@ export BLOB_PREFIX="redacted"
 # SAS token (no leading '?')
 export AZURE_STORAGE_SAS_TOKEN='redacted`
 ```
+Update script permissions to allow only you to read/write the file:
+```
+chmod 600 $HOME/azure_blob_info.sh
+```
 Generate samplesheet:
 ```
 cd ~
