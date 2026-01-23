@@ -163,7 +163,7 @@ Nano files are little tricky to work with. Here are some tips:
     "FW_primer": "GTCGGTAAAACTCGTGCCAGC",
     "RV_primer": "CATAGTGGGGTATCTAATCCCAGTTTG",
 
-    "metadata": "az:// path to metadata",
+    "metadata": "az://esmnf/reference/metabarcoding/ampliseq_test/metadata.txt",
     "outdir": "$HOME/Metabarcoding_Azure/$PROJECT_NAME/output/",
 
     "seed": 13,
@@ -176,7 +176,7 @@ Nano files are little tricky to work with. Here are some tips:
 
     "dada_ref_taxonomy": false,
     "skip_dada_addspecies": true,
-    "dada_ref_tax_custom": "az:// path to RSD",
+    "dada_ref_tax_custom": "az://esmnf/reference/metabarcoding/ampliseq_test/12S_RSD.txt",
     "dada_min_boot": 80,
     "dada_assign_taxlevels": "Kingdom,Phylum,Class,Order,Family,Genus,Species,Common",
 
