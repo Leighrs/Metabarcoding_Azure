@@ -56,6 +56,7 @@ This repository contains scripts and configuration files to:
   <br>
   Follow download instructions here: https://www.nextflow.io/docs/latest/install.html
 </details>
+
 ---
 
 <details>
