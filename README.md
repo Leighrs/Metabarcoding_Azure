@@ -52,6 +52,13 @@ This repository contains scripts and configuration files to:
 ---
 
 <details>
+<summary><h2>Download Nextflow</h2></summary>
+  <br>
+  Follow download instructions here: https://www.nextflow.io/docs/latest/install.html
+</details>
+---
+
+<details>
 <summary><h2>Running Test Data</h2></summary>
   
 <br>
