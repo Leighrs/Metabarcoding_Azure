@@ -134,6 +134,33 @@ PROJECT_NAME=$(cat "$HOME/Metabarcoding_Azure/current_project_name.txt")
 
 - **When prompted:**
   - *Did you sequence samples using multiple sequencing runs?:* ${\color{red}no}$
+ 
+<details>
+<summary>Troubleshoot: ERROR: AZURE CLI (az) not found in this envioronment. </summary>
+  <br>
+   
+  This error means that the script cannot locate the `az` command. Follow the instructions below based on your computing environment to resolve this:
+  1. If you are using Conda/Mamba:
+    - If you manage your software packages using Conda or Mamba, you can easily install the Azure CLI directly into your active environment without needing administrative/root privileges:
+      ```
+      conda activate your_environment_name
+      conda install -c conda-forge azure-cli
+      ```
+  2. If you are on a Personal Computer or Local Server (with Admin Privileges):
+    - If you are running this on your own machine, you can install the Azure CLI globally using your system's package manager:
+       - macOS (via Homebrew):
+        ```
+        brew update && brew install azure-cli
+        ```
+       - Ubuntu / Debian Linux:
+        ```
+        curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
+        ```
+       - Windows (PowerShell as Admin):
+        ```
+        Invoke-WebRequest -Uri https://aka.ms/installazurecliwindows -OutFile .\AzureCLI.msi; Start-Process msiexec.exe -ArgumentList '/I AzureCLI.msi /quiet' -Wait
+        ```
+</details>
 
 5. **Edit Run Parameters.**
 
