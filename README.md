@@ -143,7 +143,9 @@ PROJECT_NAME=$(cat "$HOME/Metabarcoding_Azure/current_project_name.txt")
   1. If you are using Conda/Mamba:
     - If you manage your software packages using Conda or Mamba, you can easily install the Azure CLI directly into your active environment without needing administrative/root privileges:
       ```
-      conda activate your_environment_name
+      module load conda
+      conda create -n azure -c conda-forge azure-cli
+      conda activate azure
       conda install -c conda-forge azure-cli
       ```
   2. If you are on a Personal Computer or Local Server (with Admin Privileges):
