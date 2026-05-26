@@ -146,7 +146,6 @@ PROJECT_NAME=$(cat "$HOME/Metabarcoding_Azure/current_project_name.txt")
       module load conda
       conda create -n azure -c conda-forge azure-cli
       conda activate azure
-      conda install -c conda-forge azure-cli
       ```
   2. If you are on a Personal Computer or Local Server (with Admin Privileges):
     - If you are running this on your own machine, you can install the Azure CLI globally using your system's package manager:
