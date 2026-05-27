@@ -136,7 +136,7 @@ PROJECT_NAME=$(cat "$HOME/Metabarcoding_Azure/current_project_name.txt")
   - *Did you sequence samples using multiple sequencing runs?:* ${\color{red}no}$
  
 <details>
-<summary>Troubleshoot: ERROR: AZURE CLI (az) not found in this envioronment. </summary>
+<summary>Troubleshoot: ERROR: AZURE CLI (az) not found in this environment </summary>
   <br>
    
   This error means that the script cannot locate the `az` command. Follow the instructions below based on your computing environment to resolve this:
