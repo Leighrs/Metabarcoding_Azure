@@ -10,10 +10,10 @@ PROJECT_NAME="$(tr -d '\r\n' < "$HOME/Metabarcoding_Azure/current_project_name.t
 source "$HOME/azure_blob_info.sh"
 
 # Clean carriage returns/newlines from Azure configuration variables
-STORAGE_ACCOUNT="$(echo "$STORAGE_ACCOUNT" | tr -d '\r\n')"
-CONTAINER="$(echo "$CONTAINER" | tr -d '\r\n')"
-BLOB_PREFIX="$(echo "$BLOB_PREFIX" | tr -d '\r\n')"
-SAS_TOKEN="$(echo "$AZURE_STORAGE_SAS_TOKEN" | tr -d '\r\n')"
+STORAGE_ACCOUNT="$(echo "$STORAGE_ACCOUNT" | tr -d '\r\n[:space:]')"
+CONTAINER="$(echo "$CONTAINER" | tr -d '\r\n[:space:]')"
+BLOB_PREFIX="$(echo "$BLOB_PREFIX" | tr -d '\r\n[:space:]')"
+SAS_TOKEN="$(echo "$AZURE_STORAGE_SAS_TOKEN" | tr -d '\r\n[:space:]')"
 
 # Strip leading '?' from SAS token and trailing '/' from prefix if present
 SAS_TOKEN="${SAS_TOKEN#\?}"
@@ -42,15 +42,14 @@ esac
 TMP_LIST="$(mktemp)"
 
 echo "Fetching blob list from Azure..."
-# CRITICAL: We use 'tr -d \r' here to strip hidden Windows line endings
+# Use az storage, clean it, and pass it directly to the temporary file
 az storage blob list \
   --account-name "$STORAGE_ACCOUNT" \
   --container-name "$CONTAINER" \
   --prefix "${BLOB_PREFIX}/" \
   --sas-token "$SAS_TOKEN" \
   --query "[].name" \
-  -o tsv \
-  | tr -d '\r' > "$TMP_LIST"
+  -o tsv > "$TMP_LIST"
 
 # -----------------------------------------------------------------------------
 # 4. Generate Samplesheet
@@ -58,20 +57,20 @@ az storage blob list \
 # Initialize samplesheet with header
 echo -e "sampleID\tforwardReads\treverseReads\trun" > "$OUTPUT_FILE"
 
-# Process only the forward reads
-grep '_R1_001.fastq.gz$' "$TMP_LIST" | while IFS= read -r fwd_blob; do
-  # Double check sanitation: clear any trailing artifacts from the line
-  fwd_blob="$(echo "$fwd_blob" | tr -d '\r\n')"
+# CRITICAL FIX: Instead of relying on tr to drop \r, we use grep -o to extract ONLY
+# the valid path characters, leaving behind any carriage returns or hidden artifacts.
+grep -o '[A-Za-z0-9_\.\/-]*_R1_001\.fastq\.gz' "$TMP_LIST" | while IFS= read -r fwd_blob; do
   
+  # Isolate the clean file name
   fname="$(basename "$fwd_blob")"
 
   # 1. Extract clean SampleID (e.g., B12A1_02_4_S14_L001)
   sampleID="${fname%_R1_001.fastq.gz}"
 
-  # 2. Safely swap _R1_ for _R2_ now that \r is gone
+  # 2. Create the R2 string path from the clean fwd_blob variable
   rev_blob="${fwd_blob/_R1_/_R2_}"
 
-  # 3. Verify the R2 blob actually exists in our clean master list
+  # 3. Double check verification using a clean grep lookup
   if ! grep -qF "$rev_blob" "$TMP_LIST"; then
     echo "WARNING: No matching R2 found for: $fwd_blob" >&2
     echo "Attempted to look for: $rev_blob" >&2
