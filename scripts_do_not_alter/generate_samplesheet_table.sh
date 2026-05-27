@@ -9,17 +9,15 @@ PROJECT_NAME="$(tr -d '\r\n' < "$HOME/Metabarcoding_Azure/current_project_name.t
 # Source Azure credentials and configuration
 source "$HOME/azure_blob_info.sh"
 
-# Clean carriage returns/newlines from Azure configuration variables
+# Clean variables cleanly
 STORAGE_ACCOUNT="$(echo "$STORAGE_ACCOUNT" | tr -d '\r\n[:space:]')"
 CONTAINER="$(echo "$CONTAINER" | tr -d '\r\n[:space:]')"
 BLOB_PREFIX="$(echo "$BLOB_PREFIX" | tr -d '\r\n[:space:]')"
 SAS_TOKEN="$(echo "$AZURE_STORAGE_SAS_TOKEN" | tr -d '\r\n[:space:]')"
 
-# Strip leading '?' from SAS token and trailing '/' from prefix if present
 SAS_TOKEN="${SAS_TOKEN#\?}"
 BLOB_PREFIX="${BLOB_PREFIX%/}"
 
-# Setup output directories and files
 OUTPUT_DIR="$HOME/Metabarcoding_Azure/$PROJECT_NAME/samplesheet"
 OUTPUT_FILE="$OUTPUT_DIR/${PROJECT_NAME}_samplesheet.txt"
 mkdir -p "$OUTPUT_DIR"
@@ -42,35 +40,37 @@ esac
 TMP_LIST="$(mktemp)"
 
 echo "Fetching blob list from Azure..."
-# Use az storage, clean it, and pass it directly to the temporary file
 az storage blob list \
   --account-name "$STORAGE_ACCOUNT" \
   --container-name "$CONTAINER" \
   --prefix "${BLOB_PREFIX}/" \
   --sas-token "$SAS_TOKEN" \
   --query "[].name" \
-  -o tsv > "$TMP_LIST"
+  -o tsv \
+  | tr -d '\r' > "$TMP_LIST"
 
 # -----------------------------------------------------------------------------
 # 4. Generate Samplesheet
 # -----------------------------------------------------------------------------
-# Initialize samplesheet with header
 echo -e "sampleID\tforwardReads\treverseReads\trun" > "$OUTPUT_FILE"
 
-# CRITICAL FIX: Instead of relying on tr to drop \r, we use grep -o to extract ONLY
-# the valid path characters, leaving behind any carriage returns or hidden artifacts.
-grep -o '[A-Za-z0-9_\.\/-]*_R1_001\.fastq\.gz' "$TMP_LIST" | while IFS= read -r fwd_blob; do
+# Loop through R1 files found in the temp list
+grep '_R1_001.fastq.gz$' "$TMP_LIST" | while IFS= read -r fwd_blob; do
   
-  # Isolate the clean file name
+  # Absolute sanitation check of the incoming line
+  fwd_blob="$(echo "$fwd_blob" | tr -d '\r\n[:space:]')"
+  [ -z "$fwd_blob" ] && continue
+
   fname="$(basename "$fwd_blob")"
 
-  # 1. Extract clean SampleID (e.g., B12A1_02_4_S14_L001)
-  sampleID="${fname%_R1_001.fastq.gz}"
+  # 1. Extract Sample ID by chopping off the trailing _R1_001.fastq.gz completely
+  sampleID="$(echo "$fname" | sed 's/_R1_001.fastq.gz$//')"
 
-  # 2. Create the R2 string path from the clean fwd_blob variable
-  rev_blob="${fwd_blob/_R1_/_R2_}"
+  # 2. CRITICAL FIX: Explicitly target the END of the string ($) using sed 
+  # to swap R1 for R2. This completely avoids broken Bash internal variable expansion.
+  rev_blob="$(echo "$fwd_blob" | sed 's/_R1_001.fastq.gz$/_R2_001.fastq.gz/')"
 
-  # 3. Double check verification using a clean grep lookup
+  # 3. Check if the generated R2 file exists in our master list
   if ! grep -qF "$rev_blob" "$TMP_LIST"; then
     echo "WARNING: No matching R2 found for: $fwd_blob" >&2
     echo "Attempted to look for: $rev_blob" >&2
@@ -81,11 +81,10 @@ grep -o '[A-Za-z0-9_\.\/-]*_R1_001\.fastq\.gz' "$TMP_LIST" | while IFS= read -r 
   fwd_uri="az://${CONTAINER}/${fwd_blob}"
   rev_uri="az://${CONTAINER}/${rev_blob}"
 
-  # 5. Append to samplesheet
+  # 5. Output to samplesheet
   echo -e "${sampleID}\t${fwd_uri}\t${rev_uri}\t${RUN_VALUE}" >> "$OUTPUT_FILE"
 done
 
-# Cleanup
 rm -f "$TMP_LIST"
 
 echo "Success! Sample sheet written to: $OUTPUT_FILE"
