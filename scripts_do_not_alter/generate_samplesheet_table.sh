@@ -114,6 +114,17 @@ fi
 #################################
 # PROCESS BLOBS -> WRITE az:// URIs
 #################################
+# List reverse read blobs once
+mapfile -t REV_BLOBS < <(
+  az storage blob list \
+    --account-name "$STORAGE_ACCOUNT" \
+    --container-name "$CONTAINER" \
+    --prefix "${BLOB_PREFIX}/" \
+    --sas-token "$SAS_TOKEN" \
+    --query "[?ends_with(name, '_R2_001.fastq.gz')].name" \
+    -o tsv
+)
+
 for fwd_blob in "${FWD_BLOBS[@]}"; do
     fname="$(basename "$fwd_blob")"
     sampleID="$(extract_sample_id "$fname")"
@@ -123,19 +134,15 @@ for fwd_blob in "${FWD_BLOBS[@]}"; do
 
     fwd_uri="az://${CONTAINER}/${fwd_blob}"
 
-    # Only include R2 if it exists
-    if az storage blob exists \
-        --account-name "$STORAGE_ACCOUNT" \
-        --container-name "$CONTAINER" \
-        --name "$rev_blob" \
-        --sas-token "$SAS_TOKEN" \
-        --query "exists" -o tsv | grep -qi "true"; then
+    if printf '%s\n' "${REV_BLOBS[@]}" | grep -Fxq "$rev_blob"; then
         rev_uri="az://${CONTAINER}/${rev_blob}"
     else
+        echo "WARNING: No matching R2 found for: $fwd_blob"
+        echo "Expected: $rev_blob"
         rev_uri=""
     fi
 
-        echo -e "${sampleID}\t${fwd_uri}\t${rev_uri}\t${RUN_VALUE}" >> "$OUTPUT_FILE"
+    echo -e "${sampleID}\t${fwd_uri}\t${rev_uri}\t${RUN_VALUE}" >> "$OUTPUT_FILE"
 done
 
 echo "Sample sheet written to: $OUTPUT_FILE"
