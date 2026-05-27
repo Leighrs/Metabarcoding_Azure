@@ -48,6 +48,7 @@ read -r multi_runs
 case "$multi_runs" in
   no|No|NO|n|N)
     RUN_VALUE="A"
+    echo "All samples will be assigned to run 'A'."
     ;;
   yes|Yes|YES|y|Y)
     RUN_VALUE=""
@@ -68,35 +69,33 @@ extract_sample_id() {
   echo "$base" | awk -F'_' '{print $1"_"$2}'
 }
 
-TMP_FASTQ_LIST="$(mktemp)"
+TMP_R1_LIST="$(mktemp)"
 
-echo "Listing FASTQ files from Azure..."
+echo "Listing R1 FASTQ files from Azure..."
 
 az storage blob list \
   --account-name "$STORAGE_ACCOUNT" \
   --container-name "$CONTAINER" \
   --prefix "${BLOB_PREFIX}/" \
   --sas-token "$SAS_TOKEN" \
-  --query "[].name" \
+  --query "[?contains(name, '_R1_')].name" \
   -o tsv \
   | tr -d '\r' \
-  | grep '\.fastq\.gz$' > "$TMP_FASTQ_LIST"
+  | grep '\.fastq\.gz$' > "$TMP_R1_LIST"
 
-R1_COUNT="$(grep -c '_R1_' "$TMP_FASTQ_LIST" || true)"
-R2_COUNT="$(grep -c '_R2_' "$TMP_FASTQ_LIST" || true)"
+R1_COUNT="$(wc -l < "$TMP_R1_LIST" | tr -d ' ')"
 
 echo "Found $R1_COUNT R1 FASTQ files."
-echo "Found $R2_COUNT R2 FASTQ files."
 
 if [[ "$R1_COUNT" -eq 0 ]]; then
-  echo "ERROR: No R1 FASTQs found."
-  rm -f "$TMP_FASTQ_LIST"
+  echo "ERROR: No R1 FASTQs found under az://${CONTAINER}/${BLOB_PREFIX}/"
+  rm -f "$TMP_R1_LIST"
   exit 1
 fi
 
 echo -e "sampleID\tforwardReads\treverseReads\trun" > "$OUTPUT_FILE"
 
-grep '_R1_' "$TMP_FASTQ_LIST" | while IFS= read -r fwd_blob; do
+while IFS= read -r fwd_blob; do
   fwd_blob="$(printf '%s' "$fwd_blob" | tr -d '\r\n')"
 
   fname="$(basename "$fwd_blob")"
@@ -105,20 +104,12 @@ grep '_R1_' "$TMP_FASTQ_LIST" | while IFS= read -r fwd_blob; do
   rev_blob="$(printf '%s' "$fwd_blob" | sed 's/_R1_/_R2_/')"
 
   fwd_uri="az://${CONTAINER}/${fwd_blob}"
-
-  if grep -Fq "$rev_blob" "$TMP_FASTQ_LIST"; then
-    rev_uri="az://${CONTAINER}/${rev_blob}"
-  else
-    echo "WARNING: No matching R2 found."
-    echo "Forward:     $fwd_blob"
-    echo "Expected R2: $rev_blob"
-    rev_uri=""
-  fi
+  rev_uri="az://${CONTAINER}/${rev_blob}"
 
   echo -e "${sampleID}\t${fwd_uri}\t${rev_uri}\t${RUN_VALUE}" >> "$OUTPUT_FILE"
-done
+done < "$TMP_R1_LIST"
 
-rm -f "$TMP_FASTQ_LIST"
+rm -f "$TMP_R1_LIST"
 
 echo "Sample sheet written to: $OUTPUT_FILE"
 echo "Fastq test data input folder: az://${CONTAINER}/${BLOB_PREFIX}/"
