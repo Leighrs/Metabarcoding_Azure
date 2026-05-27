@@ -6,10 +6,8 @@ set -euo pipefail
 # -----------------------------------------------------------------------------
 PROJECT_NAME="$(tr -d '\r\n' < "$HOME/Metabarcoding_Azure/current_project_name.txt")"
 
-# Source Azure credentials and configuration
 source "$HOME/azure_blob_info.sh"
 
-# Clean variables cleanly
 STORAGE_ACCOUNT="$(echo "$STORAGE_ACCOUNT" | tr -d '\r\n[:space:]')"
 CONTAINER="$(echo "$CONTAINER" | tr -d '\r\n[:space:]')"
 BLOB_PREFIX="$(echo "$BLOB_PREFIX" | tr -d '\r\n[:space:]')"
@@ -35,9 +33,11 @@ case "$multi_runs" in
 esac
 
 # -----------------------------------------------------------------------------
-# 3. Fetch Blob List from Azure
+# 3. Fetch Blob List from Azure & Segregate
 # -----------------------------------------------------------------------------
-TMP_LIST="$(mktemp)"
+TMP_ALL="$(mktemp)"
+TMP_R1="$(mktemp)"
+TMP_R2="$(mktemp)"
 
 echo "Fetching blob list from Azure..."
 az storage blob list \
@@ -46,45 +46,43 @@ az storage blob list \
   --prefix "${BLOB_PREFIX}/" \
   --sas-token "$SAS_TOKEN" \
   --query "[].name" \
-  -o tsv \
-  | tr -d '\r' > "$TMP_LIST"
+  -o tsv > "$TMP_ALL"
+
+# Extract R1 and R2 into separate, cleanly sorted files
+grep '_R1_001.fastq.gz' "$TMP_ALL" | sort > "$TMP_R1"
+grep '_R2_001.fastq.gz' "$TMP_ALL" | sort > "$TMP_R2"
 
 # -----------------------------------------------------------------------------
-# 4. Generate Samplesheet
+# 4. Generate Samplesheet (Side-by-Side Stitching)
 # -----------------------------------------------------------------------------
+echo "Generating sample sheet..."
 echo -e "sampleID\tforwardReads\treverseReads\trun" > "$OUTPUT_FILE"
 
-# Loop through R1 files found in the temp list
-grep '_R1_001.fastq.gz$' "$TMP_LIST" | while IFS= read -r fwd_blob; do
+# 'paste' matches line 1 of R1 with line 1 of R2, line 2 with line 2, etc.
+paste "$TMP_R1" "$TMP_R2" | while IFS=$'\t' read -r fwd_blob rev_blob; do
   
-  # Absolute sanitation check of the incoming line
-  fwd_blob="$(echo "$fwd_blob" | tr -d '\r\n[:space:]')"
-  [ -z "$fwd_blob" ] && continue
+  # Clean up any trailing hidden garbage using a hard regular expression strip
+  fwd_blob="$(echo "$fwd_blob" | grep -o '^[^[:space:]]*')"
+  rev_blob="$(echo "$rev_blob" | grep -o '^[^[:space:]]*')"
+  
+  # Skip if either is empty
+  [ -z "$fwd_blob" ] || [ -z "$rev_blob" ] && continue
 
+  # Extract the filename to make the sample ID
   fname="$(basename "$fwd_blob")"
+  
+  # Safely slice off the suffix using awk with an explicit field separator
+  sampleID="$(echo "$fname" | awk -F'_R1_001.fastq.gz' '{print $1}')"
 
-  # 1. Extract Sample ID by chopping off the trailing _R1_001.fastq.gz completely
-  sampleID="$(echo "$fname" | sed 's/_R1_001.fastq.gz$//')"
-
-  # 2. CRITICAL FIX: Explicitly target the END of the string ($) using sed 
-  # to swap R1 for R2. This completely avoids broken Bash internal variable expansion.
-  rev_blob="$(echo "$fwd_blob" | sed 's/_R1_001.fastq.gz$/_R2_001.fastq.gz/')"
-
-  # 3. Check if the generated R2 file exists in our master list
-  if ! grep -qF "$rev_blob" "$TMP_LIST"; then
-    echo "WARNING: No matching R2 found for: $fwd_blob" >&2
-    echo "Attempted to look for: $rev_blob" >&2
-    continue
-  fi
-
-  # 4. Construct URIs
+  # Construct final URIs
   fwd_uri="az://${CONTAINER}/${fwd_blob}"
   rev_uri="az://${CONTAINER}/${rev_blob}"
 
-  # 5. Output to samplesheet
+  # Write directly to the output file
   echo -e "${sampleID}\t${fwd_uri}\t${rev_uri}\t${RUN_VALUE}" >> "$OUTPUT_FILE"
 done
 
-rm -f "$TMP_LIST"
+# Cleanup temporary files
+rm -f "$TMP_ALL" "$TMP_R1" "$TMP_R2"
 
 echo "Success! Sample sheet written to: $OUTPUT_FILE"
