@@ -2,14 +2,14 @@
 set -euo pipefail
 
 # -----------------------------------------------------------------------------
-# 1. Environment & Variables Setup (with Aggressive \r Cleanup)
+# 1. Environment & Variables Setup
 # -----------------------------------------------------------------------------
 PROJECT_NAME="$(tr -d '\r\n' < "$HOME/Metabarcoding_Azure/current_project_name.txt")"
 
 # Source Azure credentials and configuration
 source "$HOME/azure_blob_info.sh"
 
-# STRIP ALL HIDDEN CARRIAGE RETURNS (\r) AND NEWLINES (\n)
+# Clean carriage returns/newlines from Azure configuration variables
 STORAGE_ACCOUNT="$(echo "$STORAGE_ACCOUNT" | tr -d '\r\n')"
 CONTAINER="$(echo "$CONTAINER" | tr -d '\r\n')"
 BLOB_PREFIX="$(echo "$BLOB_PREFIX" | tr -d '\r\n')"
@@ -42,7 +42,7 @@ esac
 TMP_LIST="$(mktemp)"
 
 echo "Fetching blob list from Azure..."
-# Explicitly use tr -d '\r' to ensure absolutely no Windows line endings land in our temp file
+# CRITICAL: We use 'tr -d \r' here to strip hidden Windows line endings
 az storage blob list \
   --account-name "$STORAGE_ACCOUNT" \
   --container-name "$CONTAINER" \
@@ -58,24 +58,31 @@ az storage blob list \
 # Initialize samplesheet with header
 echo -e "sampleID\tforwardReads\treverseReads\trun" > "$OUTPUT_FILE"
 
-# Process only the forward reads, ensuring we strip any trailing artifacts
+# Process only the forward reads
 grep '_R1_001.fastq.gz$' "$TMP_LIST" | while IFS= read -r fwd_blob; do
-  # Double check: ensure the line itself is stripped of any hidden '\r'
+  # Double check sanitation: clear any trailing artifacts from the line
   fwd_blob="$(echo "$fwd_blob" | tr -d '\r\n')"
   
   fname="$(basename "$fwd_blob")"
 
-  # Strip the R1 suffix to get a unique sample ID
+  # 1. Extract clean SampleID (e.g., B12A1_02_4_S14_L001)
   sampleID="${fname%_R1_001.fastq.gz}"
 
-  # Swap _R1_ for _R2_ to find the matching reverse read blob path
+  # 2. Safely swap _R1_ for _R2_ now that \r is gone
   rev_blob="${fwd_blob/_R1_/_R2_}"
 
-  # Construct URIs
+  # 3. Verify the R2 blob actually exists in our clean master list
+  if ! grep -qF "$rev_blob" "$TMP_LIST"; then
+    echo "WARNING: No matching R2 found for: $fwd_blob" >&2
+    echo "Attempted to look for: $rev_blob" >&2
+    continue
+  fi
+
+  # 4. Construct URIs
   fwd_uri="az://${CONTAINER}/${fwd_blob}"
   rev_uri="az://${CONTAINER}/${rev_blob}"
 
-  # Append to samplesheet
+  # 5. Append to samplesheet
   echo -e "${sampleID}\t${fwd_uri}\t${rev_uri}\t${RUN_VALUE}" >> "$OUTPUT_FILE"
 done
 
