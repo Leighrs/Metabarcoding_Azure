@@ -45,7 +45,7 @@ fi
 # ------------------------------------
 
 nextflow run nf-core/ampliseq \
-    -r 2.15.0 \
+    -r 2.18.0 \
     -profile azurebatch,docker \
     -c "$NF_KEYS" \
     -c "$NF_CONFIG" \
