@@ -38,7 +38,10 @@ if [[ ! -f "$NF_KEYS" ]]; then
   exit 1
 fi
 
-
+# ------------------------------------
+# Ensure compatible Nextflow version
+# ------------------------------------
+export NXF_VER=26.04.4
 
 # ------------------------------------
 # Run ampliseq on Azure Batch
