@@ -202,7 +202,6 @@ Nano files are little tricky to work with. Here are some tips:
     "trunclenf": 120,
     "trunclenr": 120,
 
-    "dada_ref_taxonomy": false,
     "skip_dada_addspecies": true,
     "dada_ref_tax_custom": "az://esmnf/reference/metabarcoding/ampliseq_test/12S_RSD.txt",
     "dada_min_boot": 80,
