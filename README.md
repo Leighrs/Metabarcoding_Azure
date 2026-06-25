@@ -212,7 +212,6 @@ Nano files are little tricky to work with. Here are some tips:
 
     "skip_qiime": true,
     "skip_barrnap": true,
-    "skip_dada_addspecies": true,
     "skip_tse": true
 }
 
