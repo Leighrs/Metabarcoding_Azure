@@ -75,14 +75,14 @@ echo -e "${GREEN}Example input files created.${RESET}"
 # ---------------------------
 #  COPY CORRECT nf-params.json (ALWAYS re-named to nf-params.json)
 # ---------------------------
-SRC_STANDARD="$HOME/Metabarcoding_Azure/scripts_do_not_alter/nf-params_with_standard_RSD.json"
+SRC_STANDARD="$HOME/Metabarcoding_Azure/scripts_do_not_alter/nf-params_with_standardized_RSD.json"
 SRC_CUSTOM="$HOME/Metabarcoding_Azure/scripts_do_not_alter/nf-params_with_custom_RSD.json"
 DEST_JSON="$HOME/Metabarcoding_Azure/$PROJECT/scripts/${PROJECT}_nf-params.json"
 
 case "$DB_MODE" in
   standard)
     SRC="$SRC_STANDARD"
-    MSG="Standardized/curated DB → nf-params_with_standard_RSD.json copied as ${PROJECT}_nf-params.json"
+    MSG="Standardized/curated DB → nf-params_with_standardized_RSD.json copied as ${PROJECT}_nf-params.json"
     ;;
   custom)
     SRC="$SRC_CUSTOM"
